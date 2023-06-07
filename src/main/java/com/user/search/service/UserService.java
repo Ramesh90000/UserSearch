@@ -3,27 +3,24 @@ package com.user.search.service;
 import com.user.search.entity.*;
 import com.user.search.repository.*;
 import com.user.search.request.*;
-import jakarta.persistence.*;
-import jakarta.persistence.criteria.*;
+import com.user.search.util.*;
+import jakarta.transaction.*;
 import org.apache.commons.lang3.*;
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.data.jpa.domain.*;
 import org.springframework.stereotype.*;
 
 import java.util.*;
 
-@Component
+@Service
+@Transactional
 public class UserService {
 
     @Autowired
     private UserRepository userRepository;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
-
-    public UserService(UserRepository userRepository, EntityManager entityManager){
+    public UserService(UserRepository userRepository){
         this.userRepository = userRepository;
-        this.entityManager = entityManager;
     }
     public List<UserEntity> findAll() {
         return userRepository.findAll();
@@ -61,21 +58,22 @@ public class UserService {
         return userRepository.save(userEntity);
     }
 
-    public List<UserEntity> search(String keyword, SearchRequest searchRequest) {
+    public List<UserEntity> search(Optional<SearchRequest> input) {
 
-        List<String> columns;
-        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<UserEntity> q = cb.createQuery(UserEntity.class);
-        Root<UserEntity> userEntityRoot = q.from(UserEntity.class);
-        List<Predicate> predicates = new ArrayList<>();
-        columns = searchRequest.getColumns();
-
-        for (int i = 0; i < columns.size(); i++) {
-            predicates.add(cb.or(cb.like(userEntityRoot.get(String.valueOf(columns.get(i))).as(String.class), "%" + keyword + "%")));
-        }
-        q.select(userEntityRoot).where(
-                cb.or(predicates.toArray(new Predicate[predicates.size()])));
-        List<UserEntity> resultList = entityManager.createQuery(q).getResultList();
-        return resultList;
+        var searchRequest = input.orElse(new SearchRequest());
+        var specification = Specification.where(
+                StringUtils.isNotBlank(searchRequest.getFirstName()) ?
+                        UserSpecification.firstNameContainsIgnoreCase(searchRequest.getFirstName()) :
+                        null
+        ).and(
+                StringUtils.isNotBlank(searchRequest.getLastName()) ?
+                        UserSpecification.lastNameContainsIgnoreCase(searchRequest.getLastName()) :
+                        null
+        ).and(
+                StringUtils.isNotBlank(searchRequest.getUsername()) ?
+                        UserSpecification.usernameContainsIgnoreCase(searchRequest.getUsername()) :
+                        null
+        );
+        return userRepository.findAll(specification);
     }
 }

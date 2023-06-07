@@ -10,8 +10,7 @@ import org.springframework.boot.test.context.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -126,18 +125,16 @@ public class UserSearchControllerTest {
         // Arrange
         String keyword = "test";
         SearchRequest searchRequest = new SearchRequest();
+        searchRequest.setLastName("lastname");
+        searchRequest.setFirstName("firstname");
+        searchRequest.setUsername("username");
         List<UserEntity> searchResult = new ArrayList<>();
-        searchResult.add(new UserEntity("testUser1"));
-        searchResult.add(new UserEntity("testUser2"));
-        when(userService.search(keyword, searchRequest)).thenReturn(searchResult);
-
+        searchResult.add(new UserEntity("username"));
+        when(userService.search(Optional.of(searchRequest))).thenReturn(searchResult);
         // Act
-        List<UserEntity> result = userSearchController.search(keyword, searchRequest);
-
+        List<UserEntity> result = userSearchController.search(Optional.of(searchRequest));
         // Assert
-        assertEquals(2, result.size());
-        assertEquals("testUser1", result.get(0).getUsername());
-        assertEquals("testUser2", result.get(1).getUsername());
+        assertEquals(1, result.size());
+        assertEquals("username", result.get(0).getUsername());
     }
-
 }

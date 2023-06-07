@@ -3,18 +3,19 @@ package com.user.search.service;
 import com.user.search.entity.UserEntity;
 import com.user.search.repository.UserRepository;
 import com.user.search.request.*;
+import com.user.search.util.*;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.criteria.*;
+import org.apache.commons.lang3.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.*;
+import org.springframework.data.jpa.domain.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -24,13 +25,11 @@ public class UserServiceTest {
 
     private UserService userService;
     private UserRepository userRepository;
-    private EntityManager entityManager;
 
     @BeforeEach
     public void setup() {
         userRepository = mock(UserRepository.class);
-        entityManager = mock(EntityManager.class);
-        userService = new UserService(userRepository, entityManager);
+        userService = new UserService(userRepository);
     }
 
     @Test
@@ -110,10 +109,8 @@ public class UserServiceTest {
         user.setEmail("john.doe@example.com");
         user.setAge("30");
         when(userRepository.save(Mockito.any())).thenReturn(user);
-
         // Act
         UserEntity result = userService.update(user);
-
         // Assert
         assertEquals("testUser", result.getUsername());
         assertEquals("John", result.getFirstName());
@@ -123,23 +120,32 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testSearch() {
+    public void testSearch_WithSearchRequest() {
         // Arrange
-        String keyword = "test";
         SearchRequest searchRequest = new SearchRequest();
-        searchRequest.setColumns(List.of("username", "firstName"));
-        List<UserEntity> expectedResults = new ArrayList<>();
-        expectedResults.add(new UserEntity("testUser1"));
-        expectedResults.add(new UserEntity("testUser2"));
-        when(entityManager.getCriteriaBuilder()).thenReturn(mock(CriteriaBuilder.class));
-        when(entityManager.createQuery(Mockito.any(CriteriaQuery.class)).getResultList()).thenReturn(expectedResults);
+        searchRequest.setFirstName("John");
+        searchRequest.setLastName("Doe");
+        searchRequest.setUsername("johndoe");
+        Specification<UserEntity> specification = Specification.where(
+                StringUtils.isNotBlank(searchRequest.getFirstName()) ?
+                        UserSpecification.firstNameContainsIgnoreCase(searchRequest.getFirstName()) :
+                        null
+        ).and(
+                StringUtils.isNotBlank(searchRequest.getLastName()) ?
+                        UserSpecification.lastNameContainsIgnoreCase(searchRequest.getLastName()) :
+                        null
+        ).and(
+                StringUtils.isNotBlank(searchRequest.getUsername()) ?
+                        UserSpecification.usernameContainsIgnoreCase(searchRequest.getUsername()) :
+                        null
+        );
+        when(userRepository.findAll(specification)).thenReturn(new ArrayList<>());
 
         // Act
-        List<UserEntity> result = userService.search(keyword, searchRequest);
+        List<UserEntity> result = userService.search(Optional.of(searchRequest));
 
         // Assert
-        assertEquals(2, result.size());
-        assertEquals("testUser1", result.get(0).getUsername());
-        assertEquals("testUser2", result.get(1).getUsername());
+        assertNotNull(result);
+        assertEquals(0, result.size());
     }
 }

@@ -21,9 +21,9 @@ public class UserSearchController {
         this.service = service;
     }
 
-    @RequestMapping(value = "/search", method = RequestMethod.GET)
-    public List<UserEntity> search(@RequestParam String keyword, @RequestBody(required = false) SearchRequest searchRequest) {
-        return service.search(keyword, searchRequest);
+    @RequestMapping(value = "/search", method = RequestMethod.PUT)
+    public List<UserEntity> search(@RequestBody(required = false) Optional<SearchRequest> searchRequest) {
+        return service.search(searchRequest);
     }
 
     @GetMapping("/users")

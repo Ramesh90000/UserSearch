@@ -9,5 +9,8 @@ import java.util.*;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 public class SearchRequest {
-    private List<String> columns;
+    private String username;
+    private String firstName;
+    private String lastName;
 }
+

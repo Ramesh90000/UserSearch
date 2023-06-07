@@ -8,7 +8,8 @@ import org.springframework.stereotype.*;
 import java.util.*;
 
 @Repository
-public interface UserRepository extends JpaRepository<UserEntity, Long> {
+public interface UserRepository extends JpaRepository<UserEntity, Long>,
+        JpaSpecificationExecutor<UserEntity> {
     long deleteUserEntityByUsername(String username);
     public UserEntity findByUsername(String username);
 }
